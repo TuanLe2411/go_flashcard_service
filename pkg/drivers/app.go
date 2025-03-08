@@ -15,11 +15,18 @@ import (
 
 const apiV1Prefix = "/api/v1"
 
-const flashcardControllerPrefix = "/flashcard"
-const creates = ""
-const getByID = "/{id}"
-const UpdateByID = "/{id}"
-const deleteByID = "/{id}"
+const FlashcardControllerPrefix = "/flashcard"
+const CreateFlashcards = ""
+const GetFlashcardByID = "/{id}"
+const UpdateFlashcardByID = "/{id}"
+const DeleteFlashcardByID = "/{id}"
+
+const CategoryControllerPrefix = "/category"
+const CreateCategory = ""
+const GetCateforyByID = "/{id}"
+const GetAllCategories = ""
+const UpdateCategoryByID = "/{id}"
+const DeleteCategoryByID = "/{id}"
 
 func Run() {
 	pkg.LoadConfig()
@@ -51,12 +58,18 @@ func Run() {
 	baseRouter := router.PathPrefix(apiV1Prefix).Subrouter()
 
 	flashcardController := controllers.NewFlashcardController(sqlDb)
+	flashcardRouter := baseRouter.PathPrefix(FlashcardControllerPrefix).Subrouter()
+	flashcardRouter.HandleFunc(CreateFlashcards, flashcardController.CreateFlashcards).Methods(http.MethodPost)
+	flashcardRouter.HandleFunc(GetFlashcardByID, flashcardController.GetByID).Methods(http.MethodGet)
+	flashcardRouter.HandleFunc(UpdateFlashcardByID, flashcardController.UpdateByID).Methods(http.MethodPut)
+	flashcardRouter.HandleFunc(DeleteFlashcardByID, flashcardController.DeleteByID).Methods(http.MethodDelete)
 
-	flashcardRouter := baseRouter.PathPrefix(flashcardControllerPrefix).Subrouter()
-	flashcardRouter.HandleFunc(creates, flashcardController.CreateFlashcards).Methods(http.MethodPost)
-	flashcardRouter.HandleFunc(getByID, flashcardController.GetByID).Methods(http.MethodGet)
-	flashcardRouter.HandleFunc(UpdateByID, flashcardController.UpdateByID).Methods(http.MethodPut)
-	flashcardRouter.HandleFunc(deleteByID, flashcardController.DeleteByID).Methods(http.MethodDelete)
+	categoryController := controllers.NewCategoryController(sqlDb)
+	categoryRouter := baseRouter.PathPrefix(CategoryControllerPrefix).Subrouter()
+	categoryRouter.HandleFunc(CreateCategory, categoryController.CreateCategory).Methods(http.MethodPost)
+	categoryRouter.HandleFunc(GetAllCategories, categoryController.GetAllCategory).Methods(http.MethodGet)
+	categoryRouter.HandleFunc(DeleteCategoryByID, categoryController.DeleteCategory).Methods(http.MethodDelete)
+	categoryRouter.HandleFunc(UpdateCategoryByID, categoryController.UpdateCategory).Methods(http.MethodPut)
 
 	log.Println("Server is running on port: " + os.Getenv("SERVER_PORT"))
 	http.ListenAndServe(":"+os.Getenv("SERVER_PORT"), router)

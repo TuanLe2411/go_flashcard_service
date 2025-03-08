@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"context"
 	"database/sql"
 	"flashcard_service/pkg/database"
 	"os"
@@ -11,8 +12,9 @@ import (
 )
 
 type MySql struct {
-	conn string
-	db   *sql.DB
+	conn    string
+	db      *sql.DB
+	timeout time.Duration
 }
 
 func NewMySql() database.Database {
@@ -25,8 +27,10 @@ func NewMySql() database.Database {
 		Loc:       time.Local,
 		ParseTime: true,
 	}
+	queryTimeout, _ := strconv.Atoi(os.Getenv("MYSQL_QUERY_TIMEOUT_BY_SECOND"))
 	return &MySql{
-		conn: config.FormatDSN(),
+		conn:    config.FormatDSN(),
+		timeout: time.Second * time.Duration(queryTimeout),
 	}
 }
 
@@ -53,8 +57,10 @@ func (m *MySql) Ping() error {
 	return m.db.Ping()
 }
 
-func (m *MySql) Query(query string) (*sql.Rows, error) {
-	rows, err := m.db.Query(query)
+func (m *MySql) QueryRows(query string, args ...any) (*sql.Rows, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+	rows, err := m.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +68,9 @@ func (m *MySql) Query(query string) (*sql.Rows, error) {
 }
 
 func (m *MySql) Exec(query string, args ...any) (sql.Result, error) {
-	r, err := m.db.Exec(query, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+	r, err := m.db.ExecContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +78,9 @@ func (m *MySql) Exec(query string, args ...any) (sql.Result, error) {
 }
 
 func (m *MySql) QueryRow(query string, args ...any) (*sql.Row, error) {
-	row := m.db.QueryRow(query, args...)
+	ctx, cancel := context.WithTimeout(context.Background(), m.timeout)
+	defer cancel()
+	row := m.db.QueryRowContext(ctx, query, args...)
 	if row.Err() != nil {
 		return nil, row.Err()
 	}
