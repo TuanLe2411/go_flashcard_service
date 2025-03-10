@@ -6,6 +6,6 @@ type CreateCategory struct {
 	Name string
 }
 
-func (c CreateCategory) toCategory() model.Category {
+func (c CreateCategory) ToCategory() model.Category {
 	return model.Category{Name: c.Name}
 }

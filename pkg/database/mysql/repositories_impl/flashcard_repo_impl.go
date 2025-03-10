@@ -4,6 +4,7 @@ import (
 	"flashcard_service/internal/model"
 	"flashcard_service/internal/repositories"
 	"flashcard_service/pkg/database"
+	"flashcard_service/pkg/objects"
 	"fmt"
 	"strings"
 	"time"
@@ -21,13 +22,13 @@ func NewFlashcardRepositoryImpl(
 	}
 }
 
-func (f *FlashcardRepositoryImpl) InsertManyByUserId(userId string, flashcards []model.Flashcard) error {
+func (f *FlashcardRepositoryImpl) InsertManyByUserId(userId string, categoryId string, flashcards []objects.CreateFlashcard) error {
 	valueStrings := make([]string, 0, len(flashcards))
 	valueArgs := make([]any, 0, len(flashcards)*3)
 
 	for _, fc := range flashcards {
 		valueStrings = append(valueStrings, "(?, ?, ?, ?, ?)")
-		valueArgs = append(valueArgs, fc.Name, fc.Content, fc.CategoryId, time.Now().Format("2006-01-02 15:04:05"), userId)
+		valueArgs = append(valueArgs, fc.Name, fc.Content, categoryId, time.Now().Format("2006-01-02 15:04:05"), userId)
 	}
 
 	query := fmt.Sprintf("INSERT INTO flashcard (name, content, category_id, created_at, user_id) VALUES %s",
@@ -37,7 +38,7 @@ func (f *FlashcardRepositoryImpl) InsertManyByUserId(userId string, flashcards [
 	return err
 }
 
-func (f *FlashcardRepositoryImpl) FindById(userId string, id string) (model.Flashcard, error) {
+func (f *FlashcardRepositoryImpl) FindOneById(userId string, id string) (model.Flashcard, error) {
 	sql := "SELECT id, name, content, category_id, created_at, updated_at, user_id FROM flashcard WHERE id = ? and user_id = ?"
 	row, err := f.db.QueryRow(sql, id, userId)
 	if err != nil {
@@ -77,4 +78,32 @@ func (f *FlashcardRepositoryImpl) UpdateById(userId string, id string, flashcard
 		userId,
 	)
 	return err
+}
+
+func (f *FlashcardRepositoryImpl) FindByCategoryId(userId string, categoryId string) ([]model.Flashcard, error) {
+	sql := "SELECT id, name, content, category_id, created_at, updated_at, user_id FROM flashcard WHERE category_id = ? and user_id = ?"
+	rows, err := f.db.QueryRows(sql, categoryId, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var flashcards []model.Flashcard
+	for rows.Next() {
+		var flashcard model.Flashcard
+		err = rows.Scan(
+			&flashcard.ID,
+			&flashcard.Name,
+			&flashcard.Content,
+			&flashcard.CategoryId,
+			&flashcard.CreatedAt,
+			&flashcard.UpdatedAt,
+			&flashcard.UserId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		flashcards = append(flashcards, flashcard)
+	}
+	return flashcards, nil
 }

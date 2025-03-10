@@ -1,7 +1,8 @@
 package drivers
 
 import (
-	"flashcard_service/internal/controllers"
+	"flashcard_service/internal/controllers/app"
+	"flashcard_service/internal/controllers/category"
 	"flashcard_service/internal/middleware"
 	"flashcard_service/pkg"
 	"flashcard_service/pkg/database/mysql"
@@ -15,18 +16,18 @@ import (
 
 const apiV1Prefix = "/api/v1"
 
-const FlashcardControllerPrefix = "/flashcard"
-const CreateFlashcards = ""
-const GetFlashcardByID = "/{id}"
-const UpdateFlashcardByID = "/{id}"
-const DeleteFlashcardByID = "/{id}"
-
 const CategoryControllerPrefix = "/category"
 const CreateCategory = ""
 const GetCateforyByID = "/{id}"
 const GetAllCategories = ""
 const UpdateCategoryByID = "/{id}"
 const DeleteCategoryByID = "/{id}"
+const GetFlashcards = "/{category_id}/flashcards"
+const CreateNewFlashcards = "/{category_id}/flashcards"
+const DeleteFlashcard = "/{category_id}/flashcards/{flashcard_id}"
+const UpdateFlashcard = "/{category_id}/flashcards/{flashcard_id}"
+
+const HeathCheck = "/health"
 
 func Run() {
 	pkg.LoadConfig()
@@ -47,6 +48,8 @@ func Run() {
 	log.Println("Connect to redis successfully")
 
 	router := mux.NewRouter()
+	appController := &app.AppController{}
+	router.HandleFunc(HeathCheck, appController.HeathCheck).Methods(http.MethodGet)
 
 	router.Use(
 		middleware.XssProtectionMiddleware,
@@ -57,19 +60,16 @@ func Run() {
 
 	baseRouter := router.PathPrefix(apiV1Prefix).Subrouter()
 
-	flashcardController := controllers.NewFlashcardController(sqlDb)
-	flashcardRouter := baseRouter.PathPrefix(FlashcardControllerPrefix).Subrouter()
-	flashcardRouter.HandleFunc(CreateFlashcards, flashcardController.CreateFlashcards).Methods(http.MethodPost)
-	flashcardRouter.HandleFunc(GetFlashcardByID, flashcardController.GetByID).Methods(http.MethodGet)
-	flashcardRouter.HandleFunc(UpdateFlashcardByID, flashcardController.UpdateByID).Methods(http.MethodPut)
-	flashcardRouter.HandleFunc(DeleteFlashcardByID, flashcardController.DeleteByID).Methods(http.MethodDelete)
-
-	categoryController := controllers.NewCategoryController(sqlDb)
+	categoryController := category.NewCategoryController(sqlDb, redis)
 	categoryRouter := baseRouter.PathPrefix(CategoryControllerPrefix).Subrouter()
 	categoryRouter.HandleFunc(CreateCategory, categoryController.CreateCategory).Methods(http.MethodPost)
 	categoryRouter.HandleFunc(GetAllCategories, categoryController.GetAllCategory).Methods(http.MethodGet)
 	categoryRouter.HandleFunc(DeleteCategoryByID, categoryController.DeleteCategory).Methods(http.MethodDelete)
 	categoryRouter.HandleFunc(UpdateCategoryByID, categoryController.UpdateCategory).Methods(http.MethodPut)
+	categoryRouter.HandleFunc(CreateNewFlashcards, categoryController.CreateNewFlashcards).Methods(http.MethodPost)
+	categoryRouter.HandleFunc(GetFlashcards, categoryController.GetFlashcardsByCategoryId).Methods(http.MethodGet)
+	categoryRouter.HandleFunc(DeleteFlashcard, categoryController.DeleteFlashcard).Methods(http.MethodDelete)
+	categoryRouter.HandleFunc(UpdateFlashcard, categoryController.UpdateFlashcard).Methods(http.MethodPut)
 
 	log.Println("Server is running on port: " + os.Getenv("SERVER_PORT"))
 	http.ListenAndServe(":"+os.Getenv("SERVER_PORT"), router)

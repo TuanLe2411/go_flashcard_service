@@ -17,14 +17,18 @@ func NewCategoryRepositoryImpl(db database.Database) repositories.CategoryReposi
 	}
 }
 
-func (c *CategoryRepositoryImpl) Insert(userId string, name string) error {
-	_, err := c.db.Exec(
+func (c *CategoryRepositoryImpl) Insert(userId string, name string) (int64, error) {
+	result, err := c.db.Exec(
 		"INSERT INTO flash_category (name, user_id, created_at) VALUES (?, ?, ?)",
 		name,
 		userId,
 		time.Now().Format("2006-01-02 15:04:05"),
 	)
-	return err
+	if err != nil {
+		return 0, err
+	}
+
+	return result.LastInsertId()
 }
 
 func (c *CategoryRepositoryImpl) FindAll(userId string) ([]model.Category, error) {

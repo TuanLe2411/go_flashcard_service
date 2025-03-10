@@ -3,7 +3,7 @@ package model
 import "time"
 
 type Flashcard struct {
-	ID         int        `json:"id,omitempty"`
+	ID         int64      `json:"id,omitempty"`
 	Name       string     `json:"name,omitempty"`
 	Content    string     `json:"content,omitempty"`
 	CategoryId int        `json:"categoryId,omitempty"`
