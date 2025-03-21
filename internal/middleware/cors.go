@@ -13,7 +13,7 @@ func CorsMiddleware(next http.Handler) http.Handler {
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 		MaxAge:           300,
-		Debug:            true,
+		Debug:            false,
 	})
 	return cors.Handler(next)
 

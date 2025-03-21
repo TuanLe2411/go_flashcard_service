@@ -34,13 +34,15 @@ func (f *FlashcardRepositoryImpl) InsertManyByUserId(userId string, categoryId s
 	query := fmt.Sprintf("INSERT INTO flashcard (name, content, category_id, created_at, user_id) VALUES %s",
 		strings.Join(valueStrings, ","))
 
-	_, err := f.db.Exec(query, valueArgs...)
+	_, cancel, err := f.db.Exec(query, valueArgs...)
+	defer cancel()
 	return err
 }
 
 func (f *FlashcardRepositoryImpl) FindOneById(userId string, id string) (model.Flashcard, error) {
 	sql := "SELECT id, name, content, category_id, created_at, updated_at, user_id FROM flashcard WHERE id = ? and user_id = ?"
-	row, err := f.db.QueryRow(sql, id, userId)
+	row, cancel, err := f.db.QueryRow(sql, id, userId)
+	defer cancel()
 	if err != nil {
 		return model.Flashcard{}, err
 	}
@@ -62,13 +64,14 @@ func (f *FlashcardRepositoryImpl) FindOneById(userId string, id string) (model.F
 
 func (f *FlashcardRepositoryImpl) DeleteById(userId string, id string) error {
 	sql := "DELETE FROM flashcard WHERE id = ? and user_id = ?"
-	_, err := f.db.Exec(sql, id, userId)
+	_, cancel, err := f.db.Exec(sql, id, userId)
+	defer cancel()
 	return err
 }
 
 func (f *FlashcardRepositoryImpl) UpdateById(userId string, id string, flashcard model.Flashcard) error {
 	sql := "UPDATE flashcard SET name = ?, content = ?, category_id = ?, updated_at = ? WHERE id = ? and user_id = ?"
-	_, err := f.db.Exec(
+	_, cancel, err := f.db.Exec(
 		sql,
 		flashcard.Name,
 		flashcard.Content,
@@ -77,12 +80,14 @@ func (f *FlashcardRepositoryImpl) UpdateById(userId string, id string, flashcard
 		id,
 		userId,
 	)
+	defer cancel()
 	return err
 }
 
 func (f *FlashcardRepositoryImpl) FindByCategoryId(userId string, categoryId string) ([]model.Flashcard, error) {
 	sql := "SELECT id, name, content, category_id, created_at, updated_at, user_id FROM flashcard WHERE category_id = ? and user_id = ?"
-	rows, err := f.db.QueryRows(sql, categoryId, userId)
+	rows, cancel, err := f.db.QueryRows(sql, categoryId, userId)
+	defer cancel()
 	if err != nil {
 		return nil, err
 	}

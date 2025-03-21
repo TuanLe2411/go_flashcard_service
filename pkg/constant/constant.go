@@ -8,7 +8,7 @@ const (
 )
 
 const UserContextKey contextKey = "user"
-
+const TrackingIdContextKey contextKey = "trackingId"
 const AppErrorContextKey contextKey = "appError"
 
 const (

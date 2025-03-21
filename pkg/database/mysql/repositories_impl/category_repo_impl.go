@@ -18,12 +18,13 @@ func NewCategoryRepositoryImpl(db database.Database) repositories.CategoryReposi
 }
 
 func (c *CategoryRepositoryImpl) Insert(userId string, name string) (int64, error) {
-	result, err := c.db.Exec(
+	result, cancel, err := c.db.Exec(
 		"INSERT INTO flash_category (name, user_id, created_at) VALUES (?, ?, ?)",
 		name,
 		userId,
 		time.Now().Format("2006-01-02 15:04:05"),
 	)
+	defer cancel()
 	if err != nil {
 		return 0, err
 	}
@@ -32,10 +33,11 @@ func (c *CategoryRepositoryImpl) Insert(userId string, name string) (int64, erro
 }
 
 func (c *CategoryRepositoryImpl) FindAll(userId string) ([]model.Category, error) {
-	rows, err := c.db.QueryRows(
+	rows, cancel, err := c.db.QueryRows(
 		"SELECT id, name, user_id, created_at, updated_at FROM flash_category WHERE user_id = ?",
 		userId,
 	)
+	defer cancel()
 	if err != nil {
 		return nil, err
 	}
@@ -60,20 +62,22 @@ func (c *CategoryRepositoryImpl) FindAll(userId string) ([]model.Category, error
 }
 
 func (c *CategoryRepositoryImpl) DeleteById(userId string, id string) error {
-	_, err := c.db.Exec(
+	_, cancel, err := c.db.Exec(
 		"delete from flash_category where user_id = ? and id = ?",
 		userId,
 		id,
 	)
+	defer cancel()
 	return err
 }
 
 func (c *CategoryRepositoryImpl) UpdateById(userId string, id string, name string) error {
-	_, err := c.db.Exec(
+	_, cancel, err := c.db.Exec(
 		"update flash_category set name = ? where user_id = ? and id = ?",
 		name,
 		userId,
 		id,
 	)
+	defer cancel()
 	return err
 }

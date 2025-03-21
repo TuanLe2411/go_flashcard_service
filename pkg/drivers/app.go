@@ -1,13 +1,16 @@
 package drivers
 
 import (
+	"flashcard_service/internal/app_log"
 	"flashcard_service/internal/controllers/app"
 	"flashcard_service/internal/controllers/category"
 	"flashcard_service/internal/middleware"
 	"flashcard_service/pkg"
 	"flashcard_service/pkg/database/mysql"
 	"flashcard_service/pkg/database/redis"
-	"log"
+
+	"github.com/rs/zerolog/log"
+
 	"net/http"
 	"os"
 
@@ -31,21 +34,21 @@ const HeathCheck = "/health"
 
 func Run() {
 	pkg.LoadConfig()
+	app_log.InitLogger()
 	sqlDb := mysql.NewMySql()
 	err := sqlDb.Connect()
 	if err != nil {
-		log.Println("Error when connect to db: " + err.Error())
-		panic(err)
+		log.Fatal().Msg("Error when connect to db: " + err.Error())
 	}
-	log.Println("Connect to db successfully")
+	log.Info().Msg("Connect to db successfully")
 
 	redis := redis.NewRedisClient()
 	err = redis.Connect()
 	if err != nil {
-		log.Println("Error when connect to redis: " + err.Error())
+		log.Fatal().Msg("Error when connect to redis: " + err.Error())
 		panic(err)
 	}
-	log.Println("Connect to redis successfully")
+	log.Info().Msg("Connect to redis successfully")
 
 	router := mux.NewRouter()
 	appController := &app.AppController{}
@@ -71,6 +74,6 @@ func Run() {
 	categoryRouter.HandleFunc(DeleteFlashcard, categoryController.DeleteFlashcard).Methods(http.MethodDelete)
 	categoryRouter.HandleFunc(UpdateFlashcard, categoryController.UpdateFlashcard).Methods(http.MethodPut)
 
-	log.Println("Server is running on port: " + os.Getenv("SERVER_PORT"))
+	log.Info().Msg("Server is running on port: " + os.Getenv("SERVER_PORT"))
 	http.ListenAndServe(":"+os.Getenv("SERVER_PORT"), router)
 }

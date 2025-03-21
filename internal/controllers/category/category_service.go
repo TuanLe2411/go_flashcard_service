@@ -2,9 +2,14 @@ package category
 
 import (
 	"encoding/json"
+	"errors"
 	"flashcard_service/internal/model"
 	"flashcard_service/pkg/database/redis"
+	"flashcard_service/pkg/utils"
+	"net/http"
 	"strconv"
+
+	"github.com/rs/zerolog/log"
 )
 
 type CategoryService struct {
@@ -104,4 +109,30 @@ func (c *CategoryService) GetFlashcardsFromRedisHash(userId string, categoryId s
 func (c *CategoryService) DeleteFlashcardFromRedisHash(userId string, categoryId string, flashcardId string) error {
 	key := redis.GetFlashcardsKey(userId, categoryId)
 	return c.r.HDel(key, flashcardId)
+}
+
+func (c *CategoryService) isUserIdInvalid(userId string, r *http.Request, trackingId string) bool {
+	if len(userId) == 0 {
+		msg := "userid invalid"
+		log.Error().
+			Str("trackingId", trackingId).
+			Str("error", msg).
+			Msg("")
+		utils.SetHttpReponseError(r, utils.ErrBadRequest, errors.New(msg))
+		return true
+	}
+	return false
+}
+
+func (c *CategoryService) isFlashcardAndCategoryInvalid(categoryId string, flashcardId string, r *http.Request, trackingId string) bool {
+	if len(categoryId) == 0 || len(flashcardId) == 0 {
+		msg := "error when delete flashcard: category_id or flashcard_id is empty"
+		log.Error().
+			Str("trackingId", trackingId).
+			Str("error", msg).
+			Msg("")
+		utils.SetHttpReponseError(r, utils.ErrBadRequest, errors.New(msg))
+		return true
+	}
+	return false
 }
